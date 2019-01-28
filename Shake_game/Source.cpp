@@ -34,7 +34,7 @@ public:
 	Game();
 	void run();
 	sf::RenderWindow mWindow;
-	sf::CircleShape mFruit;
+	sf::Sprite mFruit;
 	void counterNull();
 	void eatFruit(sf::Vector2f);
 
@@ -47,9 +47,12 @@ private:
 	void createFruit();
 
 private:
+	sf::Texture textureFruit;
+	sf::Texture textureBack;
 	sf::Font font;
 	sf::Text textFPS;
 	sf::Text textCounter;
+	sf::Sprite background;
 	Player player;
 	const int step = 18;
 	int counter = step;
@@ -155,7 +158,15 @@ sf::Vector2f Player::getPositionFirst() {
 //Game.cpp
 Game::Game()
 	: mWindow(sf::VideoMode(810, 600), "Shake game")
-{
+{	
+	if (!textureBack.loadFromFile("Media/Textures/grass.png"))
+	{
+		std::cout << "Error in loading textures!" << std::endl;// error...
+	}
+	textureBack.setRepeated(true);
+	background.setTexture(textureBack);
+	background.setTextureRect(sf::IntRect(0, 0, 810, 600));
+	background.setPosition(0.f,0.f);
 	textFPS.setFont(font);
 	textCounter.setFont(font);
 	createFruit();
@@ -166,6 +177,10 @@ void Game::counterNull() {
 }
 
 void Game::createFruit() {
+	if (!textureFruit.loadFromFile("Media/Textures/cherry.png"))
+	{
+		std::cout << "Error in loading textures!" << std::endl;// error...
+	}
 	sf::Vector2f fruitPosition;
 	do {
 		srand(time(NULL));
@@ -173,9 +188,8 @@ void Game::createFruit() {
 		fruitPosition.y = 30 * (rand() % 20);
 	} while (player.thisShake(fruitPosition));
 
-	mFruit.setRadius(15.f);
+	mFruit.setTexture(textureFruit);
 	mFruit.setPosition(fruitPosition);
-	mFruit.setFillColor(sf::Color::Red);
 }
 
 void Game::eatFruit(sf::Vector2f lastPos) {
@@ -205,8 +219,8 @@ void Game::run() {
 		textFPS.setFillColor(sf::Color::Magenta);
 		std::string fruits = std::to_string(counterFruits);
 		textCounter.setString(fruits);
-		textCounter.setCharacterSize(24);
-		textCounter.setFillColor(sf::Color::Yellow);
+		textCounter.setCharacterSize(30);
+		textCounter.setFillColor(sf::Color(180,0,180));
 		textCounter.setPosition(750,0);
 
 		while (timeSinceLastUpdate > TimePerFrame)
@@ -293,6 +307,7 @@ void Game::update()
 void Game::render()
 {
 	mWindow.clear();
+	mWindow.draw(background);
 	player.renderShake();
 	mWindow.draw(mFruit);
 	mWindow.draw(textFPS);
