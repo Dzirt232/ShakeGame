@@ -14,14 +14,17 @@ public:
 	void pushElement(sf::Vector2f);
 	void moveShake(sf::Vector2f);
 	void renderShake();
+	void rotateSprites(short unsigned int);
+
 	bool thisShake(sf::Vector2f);
 	sf::Vector2f getPositionFirst();
+	sf::Texture textureBody;
+	sf::Texture textureHead;
 
 private:
-	std::vector <sf::RectangleShape> shake;
-	sf::RectangleShape head;
+	std::vector <sf::Sprite> shake;
+	sf::Sprite head;
 };
-
 
 //Game.hpp
 
@@ -64,14 +67,19 @@ Game game;
 
 Player::Player()
 {
-	head.setSize(sf::Vector2f(30, 30));
-	head.setFillColor(sf::Color::Green);
+	if (!textureBody.loadFromFile("Media/Textures/body_shake.png") || !textureHead.loadFromFile("Media/Textures/head_shake.png"))
+	{
+		std::cout << "Error in loading textures!" << std::endl;// error...
+	}
+	head.setTexture(textureHead);
+	head.setTextureRect(sf::IntRect(0, 0, 30, 30));
+
 	head.setPosition(150.f, 150.f);
 	shake.push_back(head);
 }
 
 bool Player::thisShake(sf::Vector2f thisPos) {
-	for (sf::RectangleShape b : shake)
+	for (sf::Sprite b : shake)
 		if (b.getPosition() == thisPos) return true;
 	return false;
 }
@@ -87,8 +95,10 @@ void Player::moveShake(sf::Vector2f headPos)
 	if (headPos.y < 0)
 		headPos.y = 570;
 
-	if (thisShake(headPos))
-		shake.erase(shake.begin()+1,shake.begin()+shake.size());
+	if (thisShake(headPos)) {
+		shake.erase(shake.begin() + 1, shake.begin() + shake.size());
+		game.counterNull();
+	}
 
 	sf::Vector2f lastPos = shake.back().getPosition();//сохраняем позицию последнего элемента, чтобы в случае сьеденного фрукта создать не его месте новый элемент
 
@@ -96,27 +106,45 @@ void Player::moveShake(sf::Vector2f headPos)
 	shake.insert(shake.begin(), head);//добавляем голову в новом месте
 	shake.pop_back();//удаляем хвост
 	if (shake.size()>1)
-	{
-		shake[1].setOutlineThickness(2);
-		shake[1].setOutlineColor(sf::Color(250, 150, 100));
-	}
+		shake[1].setTexture(textureBody);
+
 	if (headPos == game.mFruit.getPosition())
 		game.eatFruit(lastPos);
 }
 
 void Player::pushElement(sf::Vector2f lastPos) {
-	sf::RectangleShape body;
-	body.setSize(sf::Vector2f(30, 30));
+	sf::Sprite body;
 	body.setPosition(lastPos);
-	body.setFillColor(sf::Color::Green);
-	body.setOutlineThickness(2);
-	body.setOutlineColor(sf::Color(250, 150, 100));
+	body.setTexture(textureBody);
+	body.setTextureRect(sf::IntRect(0, 0, 30, 30));
 	shake.push_back(body);
 }
 
 void Player::renderShake() {
-	for (sf::RectangleShape b : shake) 
+	for (sf::Sprite b : shake) 
 		game.mWindow.draw(b);
+}
+
+void Player::rotateSprites(short unsigned int direct){
+	switch (direct)
+	{
+	case 1:
+		for (size_t i = 0; i < shake.size(); i++)
+			shake[i].setTextureRect(sf::IntRect(90,0,30,30));
+		break;
+	case 2:
+		for (size_t i = 0; i < shake.size(); i++)
+			shake[i].setTextureRect(sf::IntRect(30, 0, 30, 30));
+		break;
+	case 3:
+		for (size_t i = 0; i < shake.size(); i++)
+			shake[i].setTextureRect(sf::IntRect(60, 0, 30, 30));
+		break;
+	case 4:
+		for (size_t i = 0; i < shake.size(); i++)
+			shake[i].setTextureRect(sf::IntRect(0, 0, 30, 30));
+		break;
+	}
 }
 
 sf::Vector2f Player::getPositionFirst() {
@@ -233,25 +261,29 @@ void Game::processEvents()
 
 void Game::update()
 {
-	sf::Vector2f movement(player.getPositionFirst());
 	counter--;
 	if (counter==0)
 	{
+		sf::Vector2f movement(player.getPositionFirst());
 		if (mIsMovingUp) {
 			movement.y -= PlayerSpeed;
 			player.moveShake(movement);
+			player.rotateSprites(1);
 		}
 		if (mIsMovingDown) {
 			movement.y += PlayerSpeed;
 			player.moveShake(movement);
+			player.rotateSprites(2);
 		}
 		if (mIsMovingLeft) {
 			movement.x -= PlayerSpeed;
 			player.moveShake(movement);
+			player.rotateSprites(3);
 		}
 		if (mIsMovingRight) {
 			movement.x += PlayerSpeed;
 			player.moveShake(movement);
+			player.rotateSprites(4);
 		}
 		counter = acceleration ? step/3 : step ;
 	}
