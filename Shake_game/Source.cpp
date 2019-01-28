@@ -14,7 +14,7 @@ public:
 	void pushElement(sf::Vector2f);
 	void moveShake(sf::Vector2f);
 	void renderShake();
-	sf::Vector2f getPosition();
+	sf::Vector2f getPositionFirst();
 
 private:
 	std::vector <sf::RectangleShape> shake;
@@ -30,7 +30,9 @@ public:
 	Game();
 	void run();
 	sf::RenderWindow mWindow;
+	sf::CircleShape mFruit;
 	void counterNull();
+	void eatFruit(sf::Vector2f);
 
 private:
 	void processEvents();
@@ -41,7 +43,6 @@ private:
 	void createFruit();
 
 private:
-	sf::CircleShape mFruit;
 	sf::Font font;
 	sf::Text textFPS;
 	sf::Text textCounter;
@@ -78,25 +79,25 @@ void Player::moveShake(sf::Vector2f headPos)
 		headPos.y = 0;
 	if (headPos.y < 0)
 		headPos.y = 570;
-	sf::Vector2f buf = shake[0].getPosition();
-	shake[0].setPosition(headPos);
-	for (size_t i = 1; i < shake.size(); i++)
-	{	
-		if (shake[0].getPosition() == shake[i].getPosition()) {
-			shake.erase(shake.begin() + 1, shake.begin() + shake.size());
-			game.counterNull();
-			break;
-		}
-		sf::Vector2f buf_2 = buf;
-		buf = shake[i].getPosition();
-		shake[i].setPosition(buf_2);
+
+	sf::Vector2f lastPos = shake.back().getPosition();//сохраняем позицию последнего элемента, чтобы в случае сьеденного фрукта создать не его месте новый элемент
+
+	head.setPosition(headPos);
+	shake.insert(shake.begin(), head);//добавляем голову в новом месте
+	shake.pop_back();//удаляем хвост
+	if (shake.size()>1)
+	{
+		shake[1].setOutlineThickness(2);
+		shake[1].setOutlineColor(sf::Color(250, 150, 100));
 	}
+	if (headPos == game.mFruit.getPosition())
+		game.eatFruit(lastPos);
 }
 
-void Player::pushElement(sf::Vector2f headPos) {
+void Player::pushElement(sf::Vector2f lastPos) {
 	sf::RectangleShape body;
 	body.setSize(sf::Vector2f(30, 30));
-	body.setPosition(headPos);
+	body.setPosition(lastPos);
 	body.setFillColor(sf::Color::Green);
 	body.setOutlineThickness(2);
 	body.setOutlineColor(sf::Color(250, 150, 100));
@@ -108,9 +109,10 @@ void Player::renderShake() {
 		game.mWindow.draw(b);
 }
 
-sf::Vector2f Player::getPosition() {
+sf::Vector2f Player::getPositionFirst() {
 	return shake[0].getPosition();
 }
+
 
 //Game.cpp
 Game::Game()
@@ -134,6 +136,13 @@ void Game::createFruit() {
 	mFruit.setRadius(15.f);
 	mFruit.setPosition(fruitPosition);
 	mFruit.setFillColor(sf::Color::Red);
+}
+
+void Game::eatFruit(sf::Vector2f lastPos) {
+	createFruit();
+	counterFruits++;
+	player.pushElement(lastPos);
+	mWindow.draw(mFruit);
 }
 
 void Game::run() {
@@ -212,8 +221,7 @@ void Game::processEvents()
 
 void Game::update()
 {
-	sf::Vector2f movement(player.getPosition());
-	sf::Vector2f playerPos = movement;
+	sf::Vector2f movement(player.getPositionFirst());
 	counter--;
 	if (counter==0)
 	{
@@ -232,12 +240,6 @@ void Game::update()
 		if (mIsMovingRight) {
 			movement.x += PlayerSpeed;
 			player.moveShake(movement);
-		}
-		if (movement == mFruit.getPosition()) {
-			createFruit();
-			counterFruits++;
-			player.pushElement(playerPos);
-			mWindow.draw(mFruit);
 		}
 		counter = acceleration ? step/3 : step ;
 	}
