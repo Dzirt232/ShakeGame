@@ -14,6 +14,7 @@ public:
 	void pushElement(sf::Vector2f);
 	void moveShake(sf::Vector2f);
 	void renderShake();
+	bool thisShake(sf::Vector2f);
 	sf::Vector2f getPositionFirst();
 
 private:
@@ -69,6 +70,12 @@ Player::Player()
 	shake.push_back(head);
 }
 
+bool Player::thisShake(sf::Vector2f thisPos) {
+	for (sf::RectangleShape b : shake)
+		if (b.getPosition() == thisPos) return true;
+	return false;
+}
+
 void Player::moveShake(sf::Vector2f headPos)
 {	
 	if (headPos.x>=840)
@@ -79,6 +86,9 @@ void Player::moveShake(sf::Vector2f headPos)
 		headPos.y = 0;
 	if (headPos.y < 0)
 		headPos.y = 570;
+
+	if (thisShake(headPos))
+		shake.erase(shake.begin()+1,shake.begin()+shake.size());
 
 	sf::Vector2f lastPos = shake.back().getPosition();//сохраняем позицию последнего элемента, чтобы в случае сьеденного фрукта создать не его месте новый элемент
 
@@ -128,10 +138,12 @@ void Game::counterNull() {
 }
 
 void Game::createFruit() {
-	srand(time(NULL));
 	sf::Vector2f fruitPosition;
-	fruitPosition.x = 30*(rand() % 26); 
-	fruitPosition.y = 30*(rand() % 20); 
+	do {
+		srand(time(NULL));
+		fruitPosition.x = 30 * (rand() % 26);
+		fruitPosition.y = 30 * (rand() % 20);
+	} while (player.thisShake(fruitPosition));
 
 	mFruit.setRadius(15.f);
 	mFruit.setPosition(fruitPosition);
