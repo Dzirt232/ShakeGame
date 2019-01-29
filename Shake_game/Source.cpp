@@ -14,7 +14,8 @@ public:
 	void pushElement(sf::Vector2f);
 	void moveShake(sf::Vector2f);
 	void renderShake();
-	void rotateSprites(short unsigned int);
+	void rotateSprites(short unsigned int, sf::Sprite); 
+	sf::Sprite activeBody();
 
 	bool thisShake(sf::Vector2f);
 	sf::Vector2f getPositionFirst();
@@ -45,6 +46,7 @@ private:
 	void handlePlayerInput(sf::Keyboard::Key, bool);
 	void handlePlayerAcceleration(sf::Keyboard::Key);
 	void createFruit();
+	sf::Sprite turnOn();
 
 private:
 	sf::Texture textureFruit;
@@ -67,6 +69,7 @@ private:
 };
 
 Game game;
+bool turn = false;
 
 Player::Player()
 {
@@ -89,10 +92,10 @@ bool Player::thisShake(sf::Vector2f thisPos) {
 
 void Player::moveShake(sf::Vector2f headPos)
 {	
-	if (headPos.x>=840)
+	if (headPos.x>=810)
 		headPos.x = 0;
 	if (headPos.x < 0)
-		headPos.x = 810;
+		headPos.x = 780;
 	if (headPos.y >= 600)
 		headPos.y = 0;
 	if (headPos.y < 0)
@@ -128,23 +131,40 @@ void Player::renderShake() {
 		game.mWindow.draw(b);
 }
 
-void Player::rotateSprites(short unsigned int direct){
+sf::Sprite Player::activeBody() {
+	return shake[0];
+}
+
+void Player::rotateSprites(short unsigned int direct, sf::Sprite turnSprite){
+	int max_i;
+
+	if (turn == false)
+		max_i = shake.size();
+	else
+		for (size_t i = 0; i < shake.size(); i++)
+			if (shake[i].getPosition() == turnSprite.getPosition()) {
+				max_i = i + 1;
+				break;
+			}
+			else
+				max_i = shake.size();
+
 	switch (direct)
 	{
 	case 1:
-		for (size_t i = 0; i < shake.size(); i++)
+		for (size_t i = 0; i < max_i; i++)
 			shake[i].setTextureRect(sf::IntRect(90,0,30,30));
 		break;
 	case 2:
-		for (size_t i = 0; i < shake.size(); i++)
+		for (size_t i = 0; i < max_i; i++)
 			shake[i].setTextureRect(sf::IntRect(30, 0, 30, 30));
 		break;
 	case 3:
-		for (size_t i = 0; i < shake.size(); i++)
+		for (size_t i = 0; i < max_i; i++)
 			shake[i].setTextureRect(sf::IntRect(60, 0, 30, 30));
 		break;
 	case 4:
-		for (size_t i = 0; i < shake.size(); i++)
+		for (size_t i = 0; i < max_i; i++)
 			shake[i].setTextureRect(sf::IntRect(0, 0, 30, 30));
 		break;
 	}
@@ -153,7 +173,6 @@ void Player::rotateSprites(short unsigned int direct){
 sf::Vector2f Player::getPositionFirst() {
 	return shake[0].getPosition();
 }
-
 
 //Game.cpp
 Game::Game()
@@ -219,8 +238,8 @@ void Game::run() {
 		textFPS.setFillColor(sf::Color::Magenta);
 		std::string fruits = std::to_string(counterFruits);
 		textCounter.setString(fruits);
-		textCounter.setCharacterSize(30);
-		textCounter.setFillColor(sf::Color(180,0,180));
+		textCounter.setCharacterSize(32);
+		textCounter.setFillColor(sf::Color(200,20,180));
 		textCounter.setPosition(750,0);
 
 		while (timeSinceLastUpdate > TimePerFrame)
@@ -233,20 +252,31 @@ void Game::run() {
 	}
 }
 
+int direct;
+
 void Game::handlePlayerInput(sf::Keyboard::Key key, bool isPressed) {
 	mIsMovingDown = false;
 	mIsMovingUp = false;
 	mIsMovingLeft = false;
 	mIsMovingRight = false;
-	if (key == sf::Keyboard::W)
+	if (key == sf::Keyboard::W) {
 		mIsMovingUp = isPressed;
-	else if (key == sf::Keyboard::S)
+		direct = 1;
+	}
+	else if (key == sf::Keyboard::S){
 		mIsMovingDown = isPressed;
-	else if (key == sf::Keyboard::A)
+		direct = 2;
+	}
+	else if (key == sf::Keyboard::A) {
 		mIsMovingLeft = isPressed;
-	else if (key == sf::Keyboard::D)
+		direct = 3;
+	}
+	else if (key == sf::Keyboard::D) {
 		mIsMovingRight = isPressed;
+		direct = 4;
+	}
 	acceleration = true;
+
 }
 
 void Game::handlePlayerAcceleration(sf::Keyboard::Key key) {
@@ -273,31 +303,46 @@ void Game::processEvents()
 	}
 }
 
+
+sf::Sprite Game::turnOn() {
+		turn = true;
+		return player.activeBody();
+}
+
+int buf;
+sf::Sprite turnSprite;
+
 void Game::update()
 {
 	counter--;
 	if (counter==0)
 	{
 		sf::Vector2f movement(player.getPositionFirst());
+		if (direct)
+		{
+			if (buf != direct)
+				turnSprite = turnOn();
+			buf = direct;
+		}
 		if (mIsMovingUp) {
 			movement.y -= PlayerSpeed;
 			player.moveShake(movement);
-			player.rotateSprites(1);
+			player.rotateSprites(direct,turnSprite);
 		}
 		if (mIsMovingDown) {
 			movement.y += PlayerSpeed;
 			player.moveShake(movement);
-			player.rotateSprites(2);
+			player.rotateSprites(direct,turnSprite);
 		}
 		if (mIsMovingLeft) {
 			movement.x -= PlayerSpeed;
 			player.moveShake(movement);
-			player.rotateSprites(3);
+			player.rotateSprites(direct,turnSprite);
 		}
 		if (mIsMovingRight) {
 			movement.x += PlayerSpeed;
 			player.moveShake(movement);
-			player.rotateSprites(4);
+			player.rotateSprites(direct,turnSprite);
 		}
 		counter = acceleration ? step/3 : step ;
 	}
